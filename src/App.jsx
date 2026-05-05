@@ -16,6 +16,7 @@ import LandingPage from './pages/LandingPage';
 import ProjectDetail from './pages/ProjectDetail';
 import ProjectsPage from './pages/ProjectsPage';
 import CreateProjectPage from './pages/CreateProjectPage';
+import EditProjectPage from './pages/EditProjectPage';
 import UserProfile from './pages/UserProfile';
 import MaterialPage from './pages/MaterialPage';
 import ChatRoom from './pages/ChatRoom';
@@ -134,6 +135,7 @@ function App() {
                         <Route path="/" element={<LandingPage />} />
                         <Route path="/proyectos" element={<ProjectsPage />} />
                         <Route path="/proyectos/crear" element={<CreateProjectPage />} />
+                        <Route path="/proyectos/:id/editar" element={<EditProjectPage />} />
                         <Route path="/proyectos/:id" element={<ProjectDetail />} />
                         <Route path="/profile" element={<UserProfile />} />
                         <Route path="/materials" element={<MaterialPage />} />

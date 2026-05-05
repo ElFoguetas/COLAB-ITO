@@ -5,6 +5,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 // Configuración de Supabase
 import { supabase } from '../config/supabaseClient';
 
+// Componentes
+import SolicitudPanel from '../components/SolicitudPanel';
+
 // ─── Mapa de estilos para el estado ──────────────────────────────────────────
 const ESTADO_STYLES = {
     'abierto':     'bg-emerald-50 text-emerald-700 border border-emerald-200',
@@ -484,9 +487,11 @@ const ProjectDetail = () => {
                                 </>
                             )}
 
-                            <p className="text-xs text-gray-400 text-center mt-2">
-                                Próximamente: solicitar unirse al proyecto
-                            </p>
+                            {/* Panel de solicitud: maneja todos los estados del flujo */}
+                            <SolicitudPanel
+                                proyecto={proyecto}
+                                sessionUserId={sessionUserId}
+                            />
                         </div>
                     </div>
                 </div>

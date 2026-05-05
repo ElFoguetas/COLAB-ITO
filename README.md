@@ -1,16 +1,39 @@
-# React + Vite
+# COLAB-ITO
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+COLAB-ITO es una plataforma web académica diseñada para estudiantes del Instituto Tecnológico de Ocotlán. Su objetivo es centralizar materiales de estudio y proyectos colaborativos en un solo lugar, facilitando la organización académica y el trabajo en equipo entre estudiantes de distintas carreras.
 
-Currently, two official plugins are available:
+## ¿Qué problema resuelve?
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Actualmente, la mayoría de los alumnos obtiene información y recursos en canales dispersos: grupos de WhatsApp, redes sociales, correos y páginas independientes de docentes. Esto provoca:
 
-## React Compiler
+- Pérdida de tiempo buscando materiales.
+- Dificultad para encontrar información confiable y actualizada.
+- Desorden al gestionar tareas y proyectos en equipo.
+- Pocas oportunidades de colaborar con estudiantes de otras carreras.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+COLAB-ITO busca concentrar todos esos recursos en una sola plataforma estructurada y fácil de usar.
 
-## Expanding the ESLint configuration
+## ¿En qué consiste la plataforma?
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Gestión de materiales académicos**  
+  Los estudiantes pueden subir, organizar y consultar apuntes, guías, ejercicios y otros recursos. Los materiales se clasifican por carrera, materia y etiquetas para que la búsqueda sea rápida y precisa.
+
+- **Creación y gestión de proyectos**  
+  Los usuarios pueden crear proyectos académicos, definir vacantes y roles, y recibir postulaciones de otros estudiantes interesados en colaborar.
+
+- **Colaboración multidisciplinaria**  
+  Estudiantes de distintas carreras pueden participar en los mismos proyectos, simulando entornos de trabajo reales y desarrollando habilidades de trabajo en equipo.
+
+- **Perfiles de usuario**  
+  Cada estudiante cuenta con un perfil donde se reflejan los proyectos en los que participa y los materiales que ha aportado.
+
+- **Acceso seguro**  
+  El registro y el inicio de sesión se realizan con correos institucionales, lo que ayuda a mantener un entorno centrado en la comunidad académica.
+
+## ¿Por qué deberías usar COLAB-ITO?
+
+- Porque reduce el tiempo que inviertes buscando información suelta en muchos lugares.
+- Porque te ofrece un repositorio organizado de materiales relevantes para tus materias.
+- Porque te permite encontrar proyectos donde colaborar y sumar experiencia práctica antes de egresar.
+- Porque facilita conectar con otros estudiantes que tienen intereses similares, incluso de otras carreras.
+- Porque ayuda a construir una comunidad académica más colaborativa, ordenada y enfocada en aprender mejor.

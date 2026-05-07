@@ -108,13 +108,12 @@ const SolicitudPanel = ({ proyecto, sessionUserId }) => {
         // Notificar al autor del proyecto (fire and forget — no bloquea el flujo)
         crearNotificacion({
             recipient_auth_id: proyecto.creator_auth_id,
-            actor_auth_id:     session.user.id,
             tipo:              'solicitud_recibida',
             titulo:            'Nueva solicitud para tu proyecto',
             mensaje:           `${applicant_nombre || 'Alguien'} quiere unirse a tu proyecto`,
             project_id:        proyecto.id,
             solicitud_id:      solicitudData?.id ?? null,
-        }).catch((err) => console.error('[notificaciones] Error al notificar solicitud:', err));
+        }).catch((err) => console.error('[notificaciones] Error inesperado al notificar solicitud:', err));
 
         setExitoso(true);
         setEnviando(false);

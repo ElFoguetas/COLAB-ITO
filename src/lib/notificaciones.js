@@ -13,23 +13,36 @@ import { supabase } from '../config/supabaseClient';
 
 /**
  * Inserta una nueva notificación.
- * Llamar en modo "fire and forget" (no debe bloquear el flujo principal).
  *
- * @param {{ recipient_auth_id, actor_auth_id?, tipo, titulo, mensaje, project_id?, solicitud_id? }} params
+ * actor_auth_id se obtiene SIEMPRE desde supabase.auth.getUser() para
+ * garantizar que coincida exactamente con auth.uid() en la policy de INSERT.
+ *
+ * IMPORTANTE: no se usa .select() después del insert porque la policy de
+ * SELECT requiere recipient_auth_id = auth.uid(), y el actor NO es el
+ * destinatario — eso causaría un falso error 42501 aunque el INSERT fuera ok.
+ *
+ * @param {{ recipient_auth_id, tipo, titulo, mensaje, project_id?, solicitud_id? }} params
  * @returns {Promise<{ ok: boolean, error: object|null }>}
  */
 export async function crearNotificacion({
     recipient_auth_id,
-    actor_auth_id    = null,
     tipo,
     titulo,
     mensaje,
-    project_id       = null,
-    solicitud_id     = null,
+    project_id   = null,
+    solicitud_id = null,
 }) {
+    // 1. Obtener el usuario autenticado real desde Supabase Auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        console.error('[notificaciones] ❌ Sin sesión activa. No se puede insertar notificación.', authError);
+        return { ok: false, error: authError ?? 'Sin sesión activa' };
+    }
+
     const payload = {
         recipient_auth_id,
-        actor_auth_id,
+        actor_auth_id: user.id,   // ← siempre del usuario autenticado real
         tipo,
         titulo,
         mensaje,
@@ -38,21 +51,28 @@ export async function crearNotificacion({
         leida: false,
     };
 
-    console.log('[notificaciones] Intentando insertar notificación:', payload);
+    // Logs de diagnóstico
+    console.log('[notificaciones] Supabase auth user.id:', user.id);
+    console.log('[notificaciones] actor_auth_id enviado:', payload.actor_auth_id);
+    console.log('[notificaciones] recipient_auth_id enviado:', payload.recipient_auth_id);
+    console.log('[notificaciones] actor === recipient?', payload.actor_auth_id === payload.recipient_auth_id);
+    console.log('[notificaciones] payload completo:', payload);
 
-    const { data, error } = await supabase
+    // 2. Insert sin .select() ni .single() — evita que la policy SELECT bloquee
+    const { error } = await supabase
         .from('notificaciones')
-        .insert(payload)
-        .select('id')
-        .single();
+        .insert([payload]);
 
     if (error) {
-        console.error('[notificaciones] ❌ Error al crear notificación. Código:', error.code, '| Mensaje:', error.message, '| Detalles:', error.details, '| Hint:', error.hint);
+        console.error('[notificaciones] ❌ Error al insertar. Código:', error.code);
+        console.error('[notificaciones] Mensaje:', error.message);
+        console.error('[notificaciones] Hint:', error.hint);
+        console.error('[notificaciones] Detalles:', error.details);
         console.error('[notificaciones] Payload que causó el error:', payload);
         return { ok: false, error };
     }
 
-    console.log('[notificaciones] ✅ Notificación creada correctamente. ID:', data?.id);
+    console.log('[notificaciones] ✅ Notificación insertada correctamente.');
     return { ok: true, error: null };
 }
 

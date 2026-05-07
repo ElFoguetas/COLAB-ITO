@@ -106,3 +106,56 @@ export async function crearSolicitud({ proyecto, session, mensaje }) {
 
     return { ok: true, data, error: null };
 }
+
+/**
+ * Lista todas las solicitudes recibidas para un proyecto dado.
+ * Solo debe llamarse desde la vista del creador del proyecto.
+ *
+ * @param {string} projectId
+ * @returns {Promise<{ solicitudes: object[], error: object|null }>}
+ */
+export async function listarSolicitudesDeProyecto(projectId) {
+    const { data, error } = await supabase
+        .from('solicitudes_proyecto')
+        .select('id, project_id, project_owner_auth_id, applicant_auth_id, applicant_nombre, mensaje, estado, created_at, updated_at')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('[solicitudes] Error al listar solicitudes del proyecto:', error);
+        return { solicitudes: [], error };
+    }
+
+    return { solicitudes: data ?? [], error: null };
+}
+
+/**
+ * Actualiza el estado de una solicitud (aceptar / rechazar).
+ * Incluye validación de que el solicitante sea el dueño del proyecto.
+ *
+ * @param {string} solicitudId   — ID de la solicitud a actualizar
+ * @param {'aceptada'|'rechazada'} nuevoEstado
+ * @param {string} creatorAuthId — auth_id del creador (para filtro de seguridad)
+ * @returns {Promise<{ ok: boolean, solicitud: object|null, error: string|null }>}
+ */
+export async function actualizarEstadoSolicitud(solicitudId, nuevoEstado, creatorAuthId) {
+    const estadosValidos = ['aceptada', 'rechazada'];
+    if (!estadosValidos.includes(nuevoEstado)) {
+        return { ok: false, solicitud: null, error: 'Estado no válido.' };
+    }
+
+    const { data, error } = await supabase
+        .from('solicitudes_proyecto')
+        .update({ estado: nuevoEstado, updated_at: new Date().toISOString() })
+        .eq('id', solicitudId)
+        .eq('project_owner_auth_id', creatorAuthId) // filtro de seguridad en DB
+        .select('id, estado, updated_at, applicant_nombre')
+        .single();
+
+    if (error) {
+        console.error('[solicitudes] Error al actualizar estado:', error);
+        return { ok: false, solicitud: null, error: 'No se pudo actualizar la solicitud. Intenta de nuevo.' };
+    }
+
+    return { ok: true, solicitud: data, error: null };
+}

@@ -27,23 +27,32 @@ export async function crearNotificacion({
     project_id       = null,
     solicitud_id     = null,
 }) {
-    const { error } = await supabase
+    const payload = {
+        recipient_auth_id,
+        actor_auth_id,
+        tipo,
+        titulo,
+        mensaje,
+        project_id,
+        solicitud_id,
+        leida: false,
+    };
+
+    console.log('[notificaciones] Intentando insertar notificación:', payload);
+
+    const { data, error } = await supabase
         .from('notificaciones')
-        .insert({
-            recipient_auth_id,
-            actor_auth_id,
-            tipo,
-            titulo,
-            mensaje,
-            project_id,
-            solicitud_id,
-            leida: false,
-        });
+        .insert(payload)
+        .select('id')
+        .single();
 
     if (error) {
-        console.error('[notificaciones] Error al crear:', error);
+        console.error('[notificaciones] ❌ Error al crear notificación. Código:', error.code, '| Mensaje:', error.message, '| Detalles:', error.details, '| Hint:', error.hint);
+        console.error('[notificaciones] Payload que causó el error:', payload);
         return { ok: false, error };
     }
+
+    console.log('[notificaciones] ✅ Notificación creada correctamente. ID:', data?.id);
     return { ok: true, error: null };
 }
 

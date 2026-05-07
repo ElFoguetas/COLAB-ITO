@@ -8,9 +8,6 @@ import ProjectCard from '../components/ProjectCard';
 // Configuración de Supabase
 import { supabase } from '../config/supabaseClient';
 
-// Contexto de perfil
-import { useProfile } from '../context/ProfileContext';
-
 // ─── Skeleton de carga ────────────────────────────────────────────────────────
 const SkeletonCard = () => (
     <div className="bg-white border border-gray-200 rounded-xl p-6 flex flex-col gap-3 animate-pulse">
@@ -112,9 +109,42 @@ const getEstados = (lista) => {
  * Carga todos los proyectos desde Supabase y aplica filtros locales.
  */
 const ProjectsPage = () => {
-    const { isProfileComplete } = useProfile();
+    // --- ESTADO: puede publicar (verificado directamente, no via contexto) ---
+    // El contexto global solo se actualiza en el flujo de Google OAuth.
+    // Para usuarios con email/contraseña o recargas de página, hacemos
+    // nuestra propia consulta de sesión + perfil.
+    const [canPublish, setCanPublish] = useState(false);
 
-    // --- ESTADOS DE DATOS ---
+    useEffect(() => {
+        const verificarPublicacion = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) { setCanPublish(false); return; }
+
+            const { data: perfil } = await supabase
+                .from('perfiles')
+                .select('id')
+                .eq('id', session.user.id)
+                .maybeSingle();
+
+            setCanPublish(!!perfil);
+        };
+
+        verificarPublicacion();
+
+        // Reaccionar si cambia la sesión (login/logout mientras la página está abierta)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (!session?.user) { setCanPublish(false); return; }
+            supabase
+                .from('perfiles')
+                .select('id')
+                .eq('id', session.user.id)
+                .maybeSingle()
+                .then(({ data }) => setCanPublish(!!data));
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
     const [todosLosProyectos, setTodosLosProyectos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -123,9 +153,6 @@ const ProjectsPage = () => {
     const [busqueda, setBusqueda] = useState('');
     const [categoria, setCategoria] = useState('Todas');
     const [estado, setEstado] = useState('Todos');
-
-    // El usuario puede publicar si tiene perfil completo
-    const canPublish = isProfileComplete === true;
 
     // --- EFECTO: cargar proyectos desde Supabase ---
     useEffect(() => {

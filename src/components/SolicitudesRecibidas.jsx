@@ -15,6 +15,7 @@ import {
     listarSolicitudesDeProyecto,
     actualizarEstadoSolicitud,
 } from '../lib/solicitudes';
+import { crearNotificacion } from '../lib/notificaciones';
 
 // ─── Helpers visuales ─────────────────────────────────────────────────────────
 
@@ -243,9 +244,9 @@ const TarjetaSolicitud = ({ solicitud, onAccion, procesandoId }) => {
 
 // ─── SolicitudesRecibidas (componente principal) ──────────────────────────────
 /**
- * @param {{ projectId: string, sessionUserId: string, creatorAuthId: string }} props
+ * @param {{ projectId: string, sessionUserId: string, creatorAuthId: string, tituloProyecto: string }} props
  */
-const SolicitudesRecibidas = ({ projectId, sessionUserId, creatorAuthId }) => {
+const SolicitudesRecibidas = ({ projectId, sessionUserId, creatorAuthId, tituloProyecto }) => {
     const [solicitudes, setSolicitudes]   = useState([]);
     const [cargando, setCargando]         = useState(true);
     const [errorCarga, setErrorCarga]     = useState(null);
@@ -328,6 +329,21 @@ const SolicitudesRecibidas = ({ projectId, sessionUserId, creatorAuthId }) => {
                         : s
                 )
             );
+
+            // Notificar al solicitante (fire and forget)
+            crearNotificacion({
+                recipient_auth_id: solicitud.applicant_auth_id,
+                actor_auth_id:     creatorAuthId,
+                tipo:              accion === 'aceptada' ? 'solicitud_aceptada' : 'solicitud_rechazada',
+                titulo:            accion === 'aceptada'
+                    ? 'Tu solicitud fue aceptada'
+                    : 'Tu solicitud no fue aceptada',
+                mensaje:           accion === 'aceptada'
+                    ? `Has sido aceptado en el proyecto "${tituloProyecto}"`
+                    : `Tu solicitud para el proyecto "${tituloProyecto}" no fue aceptada`,
+                project_id:        projectId,
+                solicitud_id:      solicitud.id,
+            }).catch((err) => console.error('[notificaciones] Error al notificar decisión:', err));
         }
 
         setProcesandoId(null);

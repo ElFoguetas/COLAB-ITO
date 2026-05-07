@@ -431,6 +431,7 @@ const ProjectDetail = () => {
                                 projectId={id}
                                 sessionUserId={sessionUserId}
                                 creatorAuthId={proyecto.creator_auth_id}
+                                tituloProyecto={proyecto.titulo}
                             />
                         )}
                     </div>

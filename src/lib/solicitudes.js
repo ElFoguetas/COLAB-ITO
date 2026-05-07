@@ -104,7 +104,7 @@ export async function crearSolicitud({ proyecto, session, mensaje }) {
         return { ok: false, data: null, error: 'No se pudo enviar la solicitud. Intenta de nuevo.' };
     }
 
-    return { ok: true, data, error: null };
+    return { ok: true, data, applicant_nombre: perfil.nombre_completo ?? '', error: null };
 }
 
 /**

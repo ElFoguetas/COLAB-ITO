@@ -1,6 +1,6 @@
 // Librerías externas
 //Porbando git
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // Configuración de Supabase
@@ -9,9 +9,13 @@ import { supabase } from '../config/supabaseClient';
 // Contexto de perfil
 import { useProfile } from '../context/ProfileContext';
 
+// Notificaciones
+import { contarNoLeidas } from '../lib/notificaciones';
+import NotificationsPanel from './NotificationsPanel';
+
 /**
  * Navbar — Barra de navegación principal de la aplicación.
- * - Con sesión activa: muestra saludo, avatar y botón de cierre de sesión.
+ * - Con sesión activa: muestra saludo, avatar, campana de notificaciones y botón de cierre de sesión.
  * - Sin sesión: muestra botones de Login y Registro.
  * - Si isProfileComplete es false (perfil obligatorio pendiente): reemplaza los
  *   links de navegación con un banner que indica que debe completar el perfil.
@@ -25,6 +29,11 @@ const Navbar = () => {
     const [user, setUser] = useState(null);
     const [displayName, setDisplayName] = useState('');
 
+    // --- NOTIFICACIONES ---
+    const [noLeidas, setNoLeidas]               = useState(0);
+    const [panelNotifAbierto, setPanelNotifAbierto] = useState(false);
+    const notifRef = useRef(null);
+
     // --- HELPER: obtener nombre del perfil ---
     const fetchDisplayName = async (userId) => {
         const { data } = await supabase
@@ -35,12 +44,21 @@ const Navbar = () => {
         setDisplayName(data?.nombre_completo ?? '');
     };
 
+    // --- HELPER: cargar contador de no leídas ---
+    const refreshNoLeidas = async (userId) => {
+        const { count } = await contarNoLeidas(userId);
+        setNoLeidas(count);
+    };
+
     // --- EFECTOS ---
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             const u = session?.user ?? null;
             setUser(u);
-            if (u) fetchDisplayName(u.id);
+            if (u) {
+                fetchDisplayName(u.id);
+                refreshNoLeidas(u.id);
+            }
         });
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -48,8 +66,11 @@ const Navbar = () => {
             setUser(u);
             if (u) {
                 fetchDisplayName(u.id);
+                refreshNoLeidas(u.id);
             } else {
                 setDisplayName('');
+                setNoLeidas(0);
+                setPanelNotifAbierto(false);
             }
         });
 
@@ -57,13 +78,23 @@ const Navbar = () => {
     }, []);
 
     // Re-fetch del nombre cada vez que el perfil se marque como completo
-    // (permite actualizar el saludo justo después de guardar el perfil)
     useEffect(() => {
         if (isProfileComplete && user) {
             fetchDisplayName(user.id);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isProfileComplete]);
+
+    // Cerrar panel al hacer clic fuera
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (notifRef.current && !notifRef.current.contains(e.target)) {
+                setPanelNotifAbierto(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // --- HANDLERS ---
     const handleLogout = async () => {
@@ -148,6 +179,37 @@ const Navbar = () => {
                                     Hola, {getDisplayName(user)}
                                 </span>
                             </Link>
+
+                            {/* ── Campana de notificaciones ── */}
+                            <div ref={notifRef} className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setPanelNotifAbierto((v) => !v)}
+                                    aria-label="Notificaciones"
+                                    className="relative p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                                >
+                                    {/* Ícono campana (Heroicons outline) */}
+                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                                    </svg>
+
+                                    {/* Badge de no leídas */}
+                                    {noLeidas > 0 && (
+                                        <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
+                                            {noLeidas > 9 ? '9+' : noLeidas}
+                                        </span>
+                                    )}
+                                </button>
+
+                                {/* Panel desplegable */}
+                                {panelNotifAbierto && (
+                                    <NotificationsPanel
+                                        userId={user.id}
+                                        onNoLeidasChange={(count) => setNoLeidas(count)}
+                                        onClose={() => setPanelNotifAbierto(false)}
+                                    />
+                                )}
+                            </div>
 
                             {/* Cerrar sesión — siempre disponible */}
                             <button

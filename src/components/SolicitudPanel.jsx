@@ -17,6 +17,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient';
 import { consultarSolicitudExistente, crearSolicitud } from '../lib/solicitudes';
+import { crearNotificacion } from '../lib/notificaciones';
 
 // ─── Estados posibles del panel ───────────────────────────────────────────────
 const PANEL = {
@@ -96,13 +97,24 @@ const SolicitudPanel = ({ proyecto, sessionUserId }) => {
 
         const { data: { session } } = await supabase.auth.getSession();
 
-        const { ok, error } = await crearSolicitud({ proyecto, session, mensaje });
+        const { ok, data: solicitudData, applicant_nombre, error } = await crearSolicitud({ proyecto, session, mensaje });
 
         if (!ok) {
             setErrorEnvio(error);
             setEnviando(false);
             return;
         }
+
+        // Notificar al autor del proyecto (fire and forget — no bloquea el flujo)
+        crearNotificacion({
+            recipient_auth_id: proyecto.creator_auth_id,
+            actor_auth_id:     session.user.id,
+            tipo:              'solicitud_recibida',
+            titulo:            'Nueva solicitud para tu proyecto',
+            mensaje:           `${applicant_nombre || 'Alguien'} quiere unirse a tu proyecto`,
+            project_id:        proyecto.id,
+            solicitud_id:      solicitudData?.id ?? null,
+        }).catch((err) => console.error('[notificaciones] Error al notificar solicitud:', err));
 
         setExitoso(true);
         setEnviando(false);

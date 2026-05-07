@@ -21,6 +21,7 @@ import UserProfile from './pages/UserProfile';
 import MaterialPage from './pages/MaterialPage';
 import ChatRoom from './pages/ChatRoom';
 import AuthPage from './pages/AuthPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Dominios institucionales permitidos
 const DOMINIOS_PERMITIDOS = ['@itocotlan.com', '@ocotlan.tecnm.mx'];
@@ -141,6 +142,7 @@ function App() {
                         <Route path="/materials" element={<MaterialPage />} />
                         <Route path="/chat/:projectId" element={<ChatRoom />} />
                         <Route path="/login" element={<AuthPage />} />
+                        <Route path="/notificaciones" element={<NotificationsPage />} />
                     </Routes>
                 </LayoutPrincipal>
             </ProfileProvider>

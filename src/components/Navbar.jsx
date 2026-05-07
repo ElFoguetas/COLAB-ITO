@@ -361,15 +361,9 @@ const Navbar = () => {
                                         Mi perfil
                                     </Link>
 
-                                    {/* Notificaciones — badge inline */}
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setMobileMenuAbierto(false);
-                                            // Las notificaciones viven en el panel del Navbar desktop;
-                                            // en móvil navega al catálogo de proyectos como fallback útil.
-                                            navigate('/proyectos');
-                                        }}
+                                    {/* Notificaciones */}
+                                    <Link
+                                        to="/notificaciones"
                                         className="w-full flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-black transition-colors"
                                     >
                                         <div className="relative">
@@ -388,7 +382,7 @@ const Navbar = () => {
                                                 {noLeidas} nueva{noLeidas !== 1 ? 's' : ''}
                                             </span>
                                         )}
-                                    </button>
+                                    </Link>
 
                                     <div className="border-t border-gray-100 my-2" />
 

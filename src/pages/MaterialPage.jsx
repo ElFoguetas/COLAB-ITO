@@ -79,32 +79,41 @@ const UploadModal = ({ session, onClose, onUploaded }) => {
             const { titulo, descripcion, tipo, archivo } = form;
             const userId = session.user.id;
 
-            // --- 1. Moderación con Gemini ---
-            const modResult = await moderateSubmission('material', {
-                titulo,
-                descripcion
-            });
-
-            if (modResult.status === MODERATION_STATUS.REJECTED) {
-                setError('El contenido ha sido rechazado por nuestras políticas de moderación. Por favor, revisa el contenido.');
-                setUploading(false);
-                return;
-            }
-
-            // --- 2. Generar ruta única en el bucket ---
+            // --- 1. Generar ruta única en el bucket ---
             const filePath = `${userId}/${Date.now()}_${archivo.name}`;
 
-            // --- 3. Subir el archivo al bucket "materiales" ---
+            // --- 2. Subir el archivo al bucket "materiales" ---
             const { error: storageError } = await supabase.storage
                 .from('materiales')
                 .upload(filePath, archivo);
 
             if (storageError) throw storageError;
 
-            // --- 4. Obtener URL pública del archivo ---
+            // --- 3. Obtener URL pública del archivo ---
             const { data: { publicUrl } } = supabase.storage
                 .from('materiales')
                 .getPublicUrl(filePath);
+
+            // --- 4. Moderación con Gemini (incluyendo el archivo) ---
+            let modResult;
+            try {
+                modResult = await moderateSubmission('material', {
+                    titulo,
+                    descripcion
+                }, publicUrl, archivo.type);
+            } catch (err) {
+                // Borrar archivo subido si la moderación falla
+                await supabase.storage.from('materiales').remove([filePath]);
+                throw err;
+            }
+
+            if (modResult.status === MODERATION_STATUS.REJECTED) {
+                // Borrar archivo si es rechazado
+                await supabase.storage.from('materiales').remove([filePath]);
+                setError('El contenido ha sido rechazado por nuestras políticas de moderación. Por favor, revisa el contenido.');
+                setUploading(false);
+                return;
+            }
 
             // --- 5. Insertar registro en la tabla materiales con datos de moderación ---
             const { error: dbError } = await supabase.from('materiales').insert({
@@ -114,7 +123,6 @@ const UploadModal = ({ session, onClose, onUploaded }) => {
                 file_path: filePath,
                 url_archivo: publicUrl,
                 uploader_auth_id: userId,
-                // Nuevos campos de moderación (pendientes de añadir en la BD manualmente)
                 moderation_status: modResult.status,
                 moderation_score: modResult.score,
                 moderation_flags: modResult.flags
@@ -395,6 +403,7 @@ const MaterialPage = () => {
             const { data, error: dbError } = await supabase
                 .from('materiales')
                 .select('*')
+                .eq('moderation_status', 'approved')
                 .order('fecha_subida', { ascending: false });
 
             if (dbError) throw dbError;

@@ -32,6 +32,7 @@ const LandingPage = () => {
                 const { data, error: sbError } = await supabase
                     .from('proyectos')
                     .select('id, titulo, resumen, tecnologias, autor_nombre, estado, categoria')
+                    .eq('moderation_status', 'approved')
                     .order('created_at', { ascending: false })
                     .limit(3);
 

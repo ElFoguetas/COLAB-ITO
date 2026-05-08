@@ -185,6 +185,9 @@ const ProjectDetail = () => {
                 if (sbError) throw sbError;
                 if (!data) {
                     setError('not_found');
+                } else if (data.moderation_status !== 'approved' && data.creator_auth_id !== session?.user?.id) {
+                    // Si no está aprobado y no soy el creador, lo oculto
+                    setError('not_found');
                 } else {
                     setProyecto(data);
                 }
@@ -350,6 +353,18 @@ const ProjectDetail = () => {
                         </div>
                     )}
                 </div>
+
+                {proyecto.moderation_status && proyecto.moderation_status !== 'approved' && (
+                    <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+                        <svg className="h-5 w-5 mt-0.5 flex-shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div>
+                            <span className="font-semibold block">Proyecto oculto al público</span>
+                            Este proyecto se encuentra en estado "{proyecto.moderation_status}". Solo tú puedes verlo hasta que sea aprobado.
+                        </div>
+                    </div>
+                )}
 
                 {/* Encabezado del proyecto */}
                 <div className="mb-8 border-b border-gray-200 pb-6">

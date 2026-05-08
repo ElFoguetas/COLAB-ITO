@@ -326,6 +326,9 @@ const EditProjectPage = () => {
                     estado:      form.estado,
                     tecnologias: tecnologias,
                     vacantes:    vacantes,
+                    moderation_status: modResult.status,
+                    moderation_score: modResult.score,
+                    moderation_flags: modResult.flags,
                     // updated_at se actualiza automáticamente en Supabase
                     // creator_auth_id y autor_nombre NO se modifican
                 })

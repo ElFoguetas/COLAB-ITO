@@ -163,6 +163,7 @@ const ProjectsPage = () => {
                 const { data, error: sbError } = await supabase
                     .from('proyectos')
                     .select('id, titulo, resumen, tecnologias, autor_nombre, estado, categoria, created_at')
+                    .eq('moderation_status', 'approved')
                     .order('created_at', { ascending: false });
 
                 if (sbError) throw sbError;

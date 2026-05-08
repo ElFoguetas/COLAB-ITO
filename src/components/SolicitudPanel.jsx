@@ -269,17 +269,23 @@ const SolicitudPanel = ({ proyecto, sessionUserId }) => {
                     <div className="px-4 py-4 space-y-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                                Mensaje (opcional)
+                                Mensaje <span className="font-normal text-gray-400">(opcional)</span>
                             </label>
                             <textarea
                                 value={mensaje}
                                 onChange={(e) => setMensaje(e.target.value)}
-                                placeholder="Cuéntale al creador por qué te interesa este proyecto o qué puedes aportar…"
-                                rows={3}
-                                maxLength={400}
-                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none resize-none transition-colors"
+                                placeholder="Cuéntale al creador por qué te interesa este proyecto, qué puedes aportar o qué experiencia tienes relevante…"
+                                rows={6}
+                                maxLength={1000}
+                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none resize-y min-h-[120px] transition-colors leading-relaxed"
                             />
-                            <p className="text-right text-xs text-gray-400 mt-1">{mensaje.length}/400</p>
+                            <p className={`text-right text-xs mt-1 transition-colors ${
+                                mensaje.length >= 900
+                                    ? 'text-amber-500 font-medium'
+                                    : 'text-gray-400'
+                            }`}>
+                                {mensaje.length}/1000
+                            </p>
                         </div>
 
                         {/* Error de envío */}

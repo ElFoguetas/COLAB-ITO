@@ -24,8 +24,8 @@ const FORM_INICIAL = {
  * UploadModal — Modal de subida de materiales académicos.
  * Se encarga de validar, subir a Supabase Storage e insertar el registro en la BD.
  *
- * @param {object}   session  - Sesión activa de Supabase (con session.user.id).
- * @param {Function} onClose  - Callback para cerrar el modal.
+ * @param {object}   session    - Sesión activa de Supabase (con session.user.id).
+ * @param {Function} onClose    - Callback para cerrar el modal.
  * @param {Function} onUploaded - Callback para recargar la lista tras subir.
  */
 const UploadModal = ({ session, onClose, onUploaded }) => {
@@ -91,6 +91,7 @@ const UploadModal = ({ session, onClose, onUploaded }) => {
                 .getPublicUrl(filePath);
 
             // 4. Insertar registro en la tabla materiales
+            //    file_path se guarda para poder borrar el archivo de Storage después
             const { error: dbError } = await supabase.from('materiales').insert({
                 titulo,
                 descripcion: descripcion || null,
@@ -246,6 +247,90 @@ const UploadModal = ({ session, onClose, onUploaded }) => {
 
 // ─────────────────────────────────────────────────────────────
 /**
+ * ModalConfirmarBorradoMaterial — Modal de confirmación antes de eliminar un material.
+ * Mismo patrón visual que ModalConfirmarBorrado en ProjectDetail.
+ *
+ * @param {string}   titulo        - Título del material a eliminar (para mostrar en el diálogo).
+ * @param {Function} onCancelar    - Cierra el modal sin hacer nada.
+ * @param {Function} onConfirmar   - Ejecuta el borrado real.
+ * @param {boolean}  eliminando    - true mientras se procesa el borrado.
+ * @param {string}   errorEliminar - Mensaje de error si el borrado falla.
+ */
+const ModalConfirmarBorradoMaterial = ({ titulo, onCancelar, onConfirmar, eliminando, errorEliminar }) => (
+    <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dialog-material-titulo"
+    >
+        {/* Fondo oscuro */}
+        <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={onCancelar}
+        />
+
+        {/* Tarjeta del diálogo */}
+        <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-[fadeInScale_0.18s_ease-out]">
+
+            {/* Ícono destructivo */}
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 border border-red-100 mx-auto">
+                <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 011-1h4a1 1 0 011 1m-7 0H5" />
+                </svg>
+            </div>
+
+            <h2 id="dialog-material-titulo" className="text-base font-bold text-gray-900 text-center mb-1">
+                ¿Eliminar este material?
+            </h2>
+            <p className="text-sm text-gray-500 text-center mb-1">
+                <span className="font-medium text-gray-700">"{titulo}"</span>
+            </p>
+            <p className="text-xs text-gray-400 text-center mb-6">
+                Esta acción es permanente y no se puede deshacer.
+            </p>
+
+            {/* Error al eliminar */}
+            {errorEliminar && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 text-center">
+                    {errorEliminar}
+                </div>
+            )}
+
+            {/* Botones */}
+            <div className="flex gap-3">
+                <button
+                    type="button"
+                    onClick={onCancelar}
+                    disabled={eliminando}
+                    className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    Cancelar
+                </button>
+                <button
+                    type="button"
+                    onClick={onConfirmar}
+                    disabled={eliminando}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                    {eliminando ? (
+                        <>
+                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                            </svg>
+                            Eliminando…
+                        </>
+                    ) : (
+                        'Eliminar'
+                    )}
+                </button>
+            </div>
+        </div>
+    </div>
+);
+
+// ─────────────────────────────────────────────────────────────
+/**
  * MaterialPage — Página del repositorio académico.
  * Carga materiales reales desde Supabase, detecta la sesión activa
  * para mostrar el botón de subida, y renderiza el modal UploadModal.
@@ -253,18 +338,19 @@ const UploadModal = ({ session, onClose, onUploaded }) => {
  */
 const MaterialPage = () => {
     // --- ESTADOS ---
-    const [materiales, setMateriales] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [session, setSession] = useState(null);
-    const [showModal, setShowModal] = useState(false);
+    const [materiales, setMateriales]   = useState([]);
+    const [loading, setLoading]         = useState(true);
+    const [error, setError]             = useState('');
+    const [session, setSession]         = useState(null);
+    const [showModal, setShowModal]     = useState(false);
+    const [searchTerm, setSearchTerm]   = useState('');
+
+    // --- ESTADO DEL MODAL DE BORRADO ---
+    const [materialAEliminar, setMaterialAEliminar] = useState(null); // { id, titulo, file_path }
+    const [eliminando, setEliminando]               = useState(false);
+    const [errorEliminar, setErrorEliminar]         = useState('');
 
     // --- EFECTOS ---
-    /**
-     * Al montar:
-     * 1. Obtiene la sesión activa para mostrar/ocultar el botón de subida.
-     * 2. Carga los materiales desde Supabase.
-     */
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
@@ -296,9 +382,102 @@ const MaterialPage = () => {
         }
     };
 
+    /**
+     * Abre el modal de confirmación de borrado.
+     * Recibe el objeto { id, titulo, file_path } desde MaterialCard.
+     */
+    const handleIniciarEliminar = (material) => {
+        setErrorEliminar('');
+        setMaterialAEliminar(material);
+    };
+
+    /**
+     * Cancela el borrado y cierra el modal.
+     */
+    const handleCancelarEliminar = () => {
+        if (eliminando) return; // no cerrar mientras se procesa
+        setMaterialAEliminar(null);
+        setErrorEliminar('');
+    };
+
+    /**
+     * Ejecuta el borrado completo:
+     * 1. Borra el archivo de Supabase Storage (bucket "materiales").
+     * 2. Borra el registro de la tabla "materiales".
+     * 3. Actualiza el estado local sin recargar toda la lista.
+     *
+     * Si no existe file_path, solo borra el registro (materiales sin archivo físico).
+     * Las políticas RLS de Supabase garantizan que solo el autor puede borrar.
+     */
+    const handleConfirmarEliminar = async () => {
+        if (!materialAEliminar) return;
+
+        const { id: materialId, titulo, file_path: filePath } = materialAEliminar;
+
+        setEliminando(true);
+        setErrorEliminar('');
+
+        try {
+            // Paso 1: borrar el archivo de Storage si tenemos la ruta
+            if (filePath) {
+                const { error: storageError } = await supabase.storage
+                    .from('materiales')
+                    .remove([filePath]);
+
+                if (storageError) {
+                    // Logueamos pero no bloqueamos — el registro de DB es lo crítico
+                    console.warn('[MaterialPage] No se pudo borrar el archivo de Storage:', storageError.message);
+                }
+            }
+
+            // Paso 2: borrar el registro de la tabla materiales
+            // La política RLS de Supabase asegura que solo el uploader_auth_id puede borrar
+            const { error: dbError } = await supabase
+                .from('materiales')
+                .delete()
+                .eq('id', materialId);
+
+            if (dbError) throw dbError;
+
+            // Paso 3: quitar el material del estado local (sin recargar toda la lista)
+            setMateriales((prev) => prev.filter((m) => m.id !== materialId));
+            setMaterialAEliminar(null);
+
+        } catch (err) {
+            console.error('[MaterialPage] Error al eliminar material:', err);
+            setErrorEliminar(err.message || 'No se pudo eliminar el material. Intenta de nuevo.');
+        } finally {
+            setEliminando(false);
+        }
+    };
+
+    const sessionUserId = session?.user?.id ?? null;
+
+    // --- FILTRADO DE MATERIALES ---
+    const filteredMateriales = materiales.filter((m) => {
+        if (!searchTerm) return true;
+        const q = searchTerm.trim().toLowerCase();
+        return (
+            (m.titulo || '').toLowerCase().includes(q) ||
+            (m.descripcion || '').toLowerCase().includes(q) ||
+            (m.file_type || '').toLowerCase().includes(q)
+        );
+    });
+
     // --- RENDERIZADO ---
     return (
         <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+
+            {/* Modal de confirmación de borrado */}
+            {materialAEliminar && (
+                <ModalConfirmarBorradoMaterial
+                    titulo={materialAEliminar.titulo}
+                    onCancelar={handleCancelarEliminar}
+                    onConfirmar={handleConfirmarEliminar}
+                    eliminando={eliminando}
+                    errorEliminar={errorEliminar}
+                />
+            )}
 
             {/* Encabezado de página */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-10 gap-4">
@@ -325,6 +504,24 @@ const MaterialPage = () => {
                 )}
             </div>
 
+            {/* Barra de búsqueda */}
+            <div className="mb-8">
+                <div className="relative max-w-lg">
+                    <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0015.803 15.803z" />
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Buscar materiales por título, descripción o tipo..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2.5 pl-9 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-400 focus:bg-white focus:outline-none transition-colors"
+                    />
+                </div>
+            </div>
+
             {/* Estado: cargando */}
             {loading && (
                 <div className="flex flex-col items-center justify-center py-24 text-gray-400">
@@ -349,7 +546,7 @@ const MaterialPage = () => {
                 </div>
             )}
 
-            {/* Estado: sin materiales */}
+            {/* Estado: sin materiales (global) */}
             {!loading && !error && materiales.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-24 text-center text-gray-400">
                     <svg className="h-12 w-12 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -360,16 +557,33 @@ const MaterialPage = () => {
                 </div>
             )}
 
+            {/* Estado: sin resultados de búsqueda */}
+            {!loading && !error && materiales.length > 0 && filteredMateriales.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-24 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                        <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0015.803 15.803z" />
+                        </svg>
+                    </div>
+                    <p className="text-lg font-medium text-gray-700">No se encontraron materiales para tu búsqueda.</p>
+                    <p className="text-sm text-gray-500 mt-1">Intenta buscar con otros términos.</p>
+                </div>
+            )}
+
             {/* Cuadrícula de materiales */}
-            {!loading && !error && materiales.length > 0 && (
+            {!loading && !error && filteredMateriales.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {materiales.map((material) => (
+                    {filteredMateriales.map((material) => (
                         <MaterialCard
                             key={material.id}
                             title={material.titulo}
                             subtitle={material.descripcion || 'Sin descripción'}
                             type={material.file_type}
                             fileUrl={material.url_archivo}
+                            materialId={material.id}
+                            uploaderAuthId={material.uploader_auth_id}
+                            sessionUserId={sessionUserId}
+                            onEliminar={handleIniciarEliminar}
                         />
                     ))}
                 </div>

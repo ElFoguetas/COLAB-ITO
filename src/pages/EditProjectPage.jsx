@@ -296,6 +296,24 @@ const EditProjectPage = () => {
 
         setGuardando(true);
         try {
+            // --- 1. Moderación con Gemini ---
+            const { moderateSubmission } = await import('../services/moderationService');
+            const { MODERATION_STATUS } = await import('../constants/moderation');
+
+            const modResult = await moderateSubmission('project', {
+                titulo: form.titulo.trim(),
+                resumen: form.resumen.trim(),
+                descripcion: form.descripcion.trim(),
+                tecnologias,
+                vacantes
+            });
+
+            if (modResult.status === MODERATION_STATUS.REJECTED) {
+                setErrorGeneral('Tus cambios no cumplen con nuestras políticas de comunidad y han sido rechazados. Por favor, revisa el contenido.');
+                setGuardando(false);
+                return;
+            }
+
             const { error: sbError } = await supabase
                 .from('proyectos')
                 .update({
@@ -321,7 +339,7 @@ const EditProjectPage = () => {
         } catch (err) {
             console.error('[EditProjectPage] Error al guardar:', err);
             setErrorGeneral(
-                'No se pudieron guardar los cambios. Verifica tu conexión e inténtalo de nuevo.'
+                err.message || 'No se pudieron guardar los cambios. Verifica tu conexión e inténtalo de nuevo.'
             );
         } finally {
             setGuardando(false);

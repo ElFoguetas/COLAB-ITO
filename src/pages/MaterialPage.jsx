@@ -7,6 +7,10 @@ import { supabase } from '../config/supabaseClient';
 // Componentes internos
 import MaterialCard from '../components/MaterialCard';
 
+// Servicios
+import { moderateSubmission } from '../services/moderationService';
+import { MODERATION_STATUS } from '../constants/moderation';
+
 // ─── Constantes ───────────────────────────────────────────────
 const TIPOS_ARCHIVO = ['pdf', 'docx', 'pptx', 'xlsx', 'txt'];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
@@ -75,23 +79,34 @@ const UploadModal = ({ session, onClose, onUploaded }) => {
             const { titulo, descripcion, tipo, archivo } = form;
             const userId = session.user.id;
 
-            // 1. Generar ruta única en el bucket
+            // --- 1. Moderación con Gemini ---
+            const modResult = await moderateSubmission('material', {
+                titulo,
+                descripcion
+            });
+
+            if (modResult.status === MODERATION_STATUS.REJECTED) {
+                setError('El contenido ha sido rechazado por nuestras políticas de moderación. Por favor, revisa el contenido.');
+                setUploading(false);
+                return;
+            }
+
+            // --- 2. Generar ruta única en el bucket ---
             const filePath = `${userId}/${Date.now()}_${archivo.name}`;
 
-            // 2. Subir el archivo al bucket "materiales"
+            // --- 3. Subir el archivo al bucket "materiales" ---
             const { error: storageError } = await supabase.storage
                 .from('materiales')
                 .upload(filePath, archivo);
 
             if (storageError) throw storageError;
 
-            // 3. Obtener URL pública del archivo
+            // --- 4. Obtener URL pública del archivo ---
             const { data: { publicUrl } } = supabase.storage
                 .from('materiales')
                 .getPublicUrl(filePath);
 
-            // 4. Insertar registro en la tabla materiales
-            //    file_path se guarda para poder borrar el archivo de Storage después
+            // --- 5. Insertar registro en la tabla materiales con datos de moderación ---
             const { error: dbError } = await supabase.from('materiales').insert({
                 titulo,
                 descripcion: descripcion || null,
@@ -99,13 +114,23 @@ const UploadModal = ({ session, onClose, onUploaded }) => {
                 file_path: filePath,
                 url_archivo: publicUrl,
                 uploader_auth_id: userId,
+                // Nuevos campos de moderación (pendientes de añadir en la BD manualmente)
+                moderation_status: modResult.status,
+                moderation_score: modResult.score,
+                moderation_flags: modResult.flags
             });
 
             if (dbError) throw dbError;
 
-            // 5. Éxito: cerrar modal y recargar lista
+            // --- 6. Éxito y feedback ---
             handleClose();
             onUploaded();
+
+            if (modResult.status === MODERATION_STATUS.PENDING_REVIEW) {
+                alert('El material ha sido subido, pero requiere una revisión manual por un administrador antes de mostrarse a todos.');
+            } else {
+                // Opcional: feedback de éxito
+            }
 
         } catch (err) {
             console.error('Error al subir material:', err);

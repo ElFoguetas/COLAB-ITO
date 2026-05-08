@@ -5,6 +5,10 @@ import { useNavigate, Link } from 'react-router-dom';
 // Configuración de Supabase
 import { supabase } from '../config/supabaseClient';
 
+// Servicios de Moderación
+import { moderateSubmission } from '../services/moderationService';
+import { MODERATION_STATUS } from '../constants/moderation';
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Convierte una cadena separada por comas en un array limpio. */
@@ -228,6 +232,22 @@ const CreateProjectPage = () => {
 
         setGuardando(true);
         try {
+            // --- 1. Moderación con Gemini ---
+            const modResult = await moderateSubmission('project', {
+                titulo: form.titulo.trim(),
+                resumen: form.resumen.trim(),
+                descripcion: form.descripcion.trim(),
+                tecnologias,
+                vacantes
+            });
+
+            if (modResult.status === MODERATION_STATUS.REJECTED) {
+                setErrorGeneral('Tu proyecto no cumple con nuestras políticas de comunidad y ha sido rechazado. Por favor, revisa el contenido.');
+                setGuardando(false);
+                return;
+            }
+
+            // --- 2. Inserción en Base de Datos ---
             const { data, error: sbError } = await supabase
                 .from('proyectos')
                 .insert({
@@ -242,18 +262,27 @@ const CreateProjectPage = () => {
                     vacantes:        vacantes,
                     creator_auth_id: sessionUserId,
                     autor_nombre:    autorNombre,
+                    // Nuevos campos de moderación (pendientes en BD)
+                    moderation_status: modResult.status,
+                    moderation_score: modResult.score,
+                    moderation_flags: modResult.flags
                 })
                 .select('id')
                 .single();
 
             if (sbError) throw sbError;
 
+            // --- 3. Feedback según estado y redirección ---
+            if (modResult.status === MODERATION_STATUS.PENDING_REVIEW) {
+                alert('Tu proyecto ha sido creado, pero está sujeto a revisión manual. Podrás verlo, pero puede no aparecer públicamente aún.');
+            }
+
             // Redirigir al detalle del nuevo proyecto
             navigate(`/proyectos/${data.id}`, { replace: true });
         } catch (err) {
             console.error('[CreateProjectPage] Error al guardar:', err);
             setErrorGeneral(
-                'No se pudo publicar el proyecto. Verifica tu conexión e inténtalo de nuevo.'
+                err.message || 'No se pudo publicar el proyecto. Verifica tu conexión e inténtalo de nuevo.'
             );
         } finally {
             setGuardando(false);

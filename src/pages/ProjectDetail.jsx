@@ -8,6 +8,7 @@ import { supabase } from '../config/supabaseClient';
 // Componentes
 import SolicitudPanel from '../components/SolicitudPanel';
 import SolicitudesRecibidas from '../components/SolicitudesRecibidas';
+import ParticipantesProyecto from '../components/ParticipantesProyecto';
 
 // ─── Mapa de estilos para el estado ──────────────────────────────────────────
 const ESTADO_STYLES = {
@@ -443,6 +444,16 @@ const ProjectDetail = () => {
                         {/* Solicitudes recibidas: solo visible para el creador del proyecto */}
                         {esCreador && (
                             <SolicitudesRecibidas
+                                projectId={id}
+                                sessionUserId={sessionUserId}
+                                creatorAuthId={proyecto.creator_auth_id}
+                                tituloProyecto={proyecto.titulo}
+                            />
+                        )}
+
+                        {/* Equipo del proyecto: solo visible para el creador */}
+                        {esCreador && (
+                            <ParticipantesProyecto
                                 projectId={id}
                                 sessionUserId={sessionUserId}
                                 creatorAuthId={proyecto.creator_auth_id}

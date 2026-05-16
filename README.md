@@ -36,4 +36,4 @@ COLAB-ITO busca concentrar todos esos recursos en una sola plataforma estructura
 - Porque te ofrece un repositorio organizado de materiales relevantes para tus materias.
 - Porque te permite encontrar proyectos donde colaborar y sumar experiencia práctica antes de egresar.
 - Porque facilita conectar con otros estudiantes que tienen intereses similares, incluso de otras carreras.
-- Porque ayuda a construir una comunidad académica más colaborativa, ordenada y enfocada en aprender mejor.
+- Porque ayuda a construir una comunidad académica más colaborativa, ordenada y enfocada en aprender mejor. -- Vercel deployment --

@@ -139,10 +139,10 @@ function App() {
                         <Route path="/proyectos" element={<ProjectsPage />} />
                         <Route path="/proyectos/crear" element={<CreateProjectPage />} />
                         <Route path="/proyectos/:id/editar" element={<EditProjectPage />} />
+                        <Route path="/proyectos/:id/chat" element={<ChatRoom />} />
                         <Route path="/proyectos/:id" element={<ProjectDetail />} />
                         <Route path="/profile" element={<UserProfile />} />
                         <Route path="/materials" element={<MaterialPage />} />
-                        <Route path="/chat/:projectId" element={<ChatRoom />} />
                         <Route path="/login" element={<AuthPage />} />
                         <Route path="/notificaciones" element={<NotificationsPage />} />
                         <Route path="/mis-proyectos" element={<MyProjectsPage />} />

@@ -41,7 +41,7 @@ const Hero = () => {
                     >
                         Unirse ahora
                     </Link>
-                    <Link to="/" className="text-sm font-semibold leading-6 text-gray-900">
+                    <Link to="/proyectos" className="text-sm font-semibold leading-6 text-gray-900">
                         Ver proyectos <span aria-hidden="true">→</span>
                     </Link>
                 </div>

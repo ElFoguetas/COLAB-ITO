@@ -34,6 +34,9 @@ const AuthPage = () => {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -44,6 +47,9 @@ const AuthPage = () => {
         setFullName('');
         setEmail('');
         setPassword('');
+        setConfirmPassword('');
+        setShowPassword(false);
+        setShowConfirmPassword(false);
         setError('');
     }, [searchParams]);
 
@@ -81,7 +87,13 @@ const AuthPage = () => {
             } else {
                 // --- REGISTRO ---
 
-                // 1. Validar dominio institucional
+                // 1. Validar que las contraseñas coincidan
+                if (password !== confirmPassword) {
+                    setError('Las contraseñas no coinciden. Por favor verifica.');
+                    return;
+                }
+
+                // 2. Validar dominio institucional
                 if (!esCorreoInstitucional(email)) {
                     setError(
                         'Debes usar tu correo institucional @itocotlan.com o @ocotlan.tecnm.mx para registrarte.'
@@ -144,6 +156,9 @@ const AuthPage = () => {
         setFullName('');
         setEmail('');
         setPassword('');
+        setConfirmPassword('');
+        setShowPassword(false);
+        setShowConfirmPassword(false);
         setError('');
     };
 
@@ -220,17 +235,81 @@ const AuthPage = () => {
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                             Contraseña
                         </label>
-                        <input
-                            id="password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Mínimo 6 caracteres"
-                            required
-                            disabled={loading}
-                            className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        />
+                        <div className="relative">
+                            <input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Mínimo 6 caracteres"
+                                required
+                                disabled={loading}
+                                className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                disabled={loading}
+                                className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-700 transition-colors focus:outline-none disabled:opacity-50"
+                                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            >
+                                {showPassword ? (
+                                    /* Ojo abierto */
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                ) : (
+                                    /* Ojo cerrado */
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 012.178-3.825M6.343 6.343A9.97 9.97 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.879 3.179M6.343 6.343L3 3m3.343 3.343l11.314 11.314M9.88 9.88a3 3 0 004.243 4.243M9.88 9.88L3 3m6.88 6.88l4.242 4.242" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
                     </div>
+
+                    {/* Input de Confirmar Contraseña — solo visible en modo Registro */}
+                    {!isLogin && (
+                        <div>
+                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                                Confirmar Contraseña
+                            </label>
+                            <div className="relative">
+                                <input
+                                    id="confirmPassword"
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    value={confirmPassword}
+                                    onChange={(e) => {
+                                        setConfirmPassword(e.target.value);
+                                        if (error && error.includes('coinciden')) setError('');
+                                    }}
+                                    placeholder="Repite tu contraseña"
+                                    required={!isLogin}
+                                    disabled={loading}
+                                    className="w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    disabled={loading}
+                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-700 transition-colors focus:outline-none disabled:opacity-50"
+                                    aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                >
+                                    {showConfirmPassword ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 012.178-3.825M6.343 6.343A9.97 9.97 0 0112 5c4.478 0 8.268 2.943 9.542 7a9.97 9.97 0 01-1.879 3.179M6.343 6.343L3 3m3.343 3.343l11.314 11.314M9.88 9.88a3 3 0 004.243 4.243M9.88 9.88L3 3m6.88 6.88l4.242 4.242" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Mensaje de error */}
                     {error && (

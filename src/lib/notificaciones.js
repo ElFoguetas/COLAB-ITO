@@ -36,7 +36,6 @@ export async function crearNotificacion({
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-        console.error('[notificaciones] ❌ Sin sesión activa. No se puede insertar notificación.', authError);
         return { ok: false, error: authError ?? 'Sin sesión activa' };
     }
 
@@ -51,12 +50,7 @@ export async function crearNotificacion({
         leida: false,
     };
 
-    // Logs de diagnóstico
-    console.log('[notificaciones] Supabase auth user.id:', user.id);
-    console.log('[notificaciones] actor_auth_id enviado:', payload.actor_auth_id);
-    console.log('[notificaciones] recipient_auth_id enviado:', payload.recipient_auth_id);
-    console.log('[notificaciones] actor === recipient?', payload.actor_auth_id === payload.recipient_auth_id);
-    console.log('[notificaciones] payload completo:', payload);
+
 
     // 2. Insert sin .select() ni .single() — evita que la policy SELECT bloquee
     const { error } = await supabase
@@ -64,15 +58,10 @@ export async function crearNotificacion({
         .insert([payload]);
 
     if (error) {
-        console.error('[notificaciones] ❌ Error al insertar. Código:', error.code);
-        console.error('[notificaciones] Mensaje:', error.message);
-        console.error('[notificaciones] Hint:', error.hint);
-        console.error('[notificaciones] Detalles:', error.details);
-        console.error('[notificaciones] Payload que causó el error:', payload);
         return { ok: false, error };
     }
 
-    console.log('[notificaciones] ✅ Notificación insertada correctamente.');
+
     return { ok: true, error: null };
 }
 

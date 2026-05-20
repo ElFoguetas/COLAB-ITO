@@ -82,7 +82,6 @@ const ChatRoom = () => {
     // que falla porque no hay FK declarada entre sender_auth_id y perfiles.id.
     // =========================================================================
     const cargarMensajes = async (pid) => {
-        console.log('Cargando mensajes de proyecto:', pid);
 
         // ── Paso A: mensajes puros ──────────────────────────────────────────
         const { data: mensajesData, error: mensajesError } = await supabase
@@ -97,7 +96,7 @@ const ChatRoom = () => {
             return;
         }
 
-        console.log('Mensajes cargados:', mensajesData);
+
 
         // ── Paso B: perfiles de los remitentes únicos ───────────────────────
         // La PK de perfiles es `id` (= auth.users.id). NO existe campo `auth_id`.
@@ -118,7 +117,7 @@ const ChatRoom = () => {
                 // No es fatal: los mensajes igual se muestran, sin nombre
             }
 
-            console.log('Perfiles cargados:', perfilesData);
+
 
             perfilesMap = Object.fromEntries(
                 (perfilesData || []).map((p) => [p.id, p])
@@ -150,7 +149,7 @@ const ChatRoom = () => {
             // ── 1. Sesión confirmada ANTES de cualquier consulta con RLS ─────
             const { data: { session: s } } = await supabase.auth.getSession();
 
-            console.log('Sesión cargada:', s?.user?.id);
+
 
             if (!s) {
                 // Sin sesión: redirigir al login
@@ -197,7 +196,6 @@ const ChatRoom = () => {
                         table: 'project_messages',
                     },
                     async (payload) => {
-                        console.log('Payload realtime recibido:', payload);
 
                         // Filtro manual por project_id (bigint → Number)
                         if (Number(payload.new.project_id) !== pid) return;
@@ -222,9 +220,7 @@ const ChatRoom = () => {
                         });
                     }
                 )
-                .subscribe((status) => {
-                    console.log('Realtime status:', status);
-                });
+                .subscribe();
         };
 
         init();
